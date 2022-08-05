@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block main %}
+
+<div>제목: {{ post.title }}</div>
+<div>작성자: {{ post.writer }}</div>
+<div>작성일: {{ post.date }}</div>
+<div>식당명: {{ post.restaurant_name }}</div>
+<div>내용: {{ post.content }}</div>
+
+<a href='/crud/'>목록</a>
+<a href='/crud/update?id={{ post.id }}/'>수정</a>
+<a href='/crud/delete?id={{ post.id }}/'>삭제</a>
+
+{% endblock %}
+
+{% block js %}
+    {% load static %}
+    <script src="{% static '/base.js' %}"></script>
+{% endblock %}

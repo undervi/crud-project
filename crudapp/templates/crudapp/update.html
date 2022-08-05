@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block main %}
+<form action="/crud/update/" method="post">
+    {% csrf_token %}
+    <input type="hidden" value="{{ post.id }}" name="id">
+    writer: <input type="text" value="{{ post.writer }}" readonly>
+    title: <input type="text" value="{{ post.title }}" name="title">
+    restaurant_name: <input type="text" value="{{ post.restaurant_name }}" readonly>
+    content: <textarea name="content">{{ post.content }}</textarea>
+    <input type="submit">
+</form>
+{% endblock %}
+
+{% block js %}
+    {% load static %}
+    <script src="{% static '/base.js' %}"></script>
+{% endblock %}

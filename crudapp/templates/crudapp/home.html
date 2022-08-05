@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block main %}
+    <a href="/crud/create">글쓰기</a>
+    <table class="table table-borderless">
+        <tr>
+            <th>제목</th>
+            <th>식당명</th>
+            <th>작성자</th>
+            <th>작성일</th>
+        </tr>
+        {% for post in post_list %}
+        <tr>
+            <td><a href='/crud/read?id={{ post.id }}/'>{{ post.title }}</a></td>
+            <td>{{ post.restaurant_name }}</td>
+            <td>{{ post.writer }}</td>
+            <td>{{ post.date }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+{% endblock %}
+
+{% block js %}
+    {% load static %}
+    <script src="{% static '/base.js' %}"></script>
+{% endblock %}

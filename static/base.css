@@ -1,0 +1,21 @@
+/* common */
+
+/* font name */
+.gamja_font {
+    font-family: 'Gamja Flower', cursive;
+}
+
+/* color name */
+
+/* HEADER */
+header {
+    text-align: center;
+    margin: 2rem 0;
+}
+header .title {
+    font-size: 3rem;
+}
+
+/* MAIN */
+
+/* FOOTER */
