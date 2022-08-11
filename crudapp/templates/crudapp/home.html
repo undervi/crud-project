@@ -1,7 +1,60 @@
 {% extends 'base.html' %}
 
+{% load static %}
+
 {% block main %}
-    <a href="/crud/create">글쓰기</a>
+{{ kw }}
+    <div class="search">
+        {% if kw == None or kw == 'None' %}
+        <input type="text" class="kw" placeholder="검색어를 입력하세요!">
+        {% else %}
+        <input type="text" class="kw" placeholder="{{ kw }}">
+        <input type="hidden" class="kw_in_use" value="{{ kw }}">
+        {% endif %}
+        <button type="button" onclick="search_kw()">검색</button>
+    </div>
+    <select name="select_order" id="select_order" onchange="location = '/' + this.value + '?kw={{ kw }}'">
+        {% if order_by == 'date_asc' or order_by == 'title_asc' or order_by == 'writer_asc' %}
+        <option value="date_desc">최신순</option>
+        {% else %}
+        <option value="date_desc" selected>최신순</option>
+        {% endif %}
+
+        {% if order_by == 'date_asc'%}
+        <option value="date_asc" selected>오래된순</option>
+        {% else %}
+        <option value="date_asc">오래된순</option>
+        {% endif %}
+
+        {% if order_by == 'title_asc' %}
+        <option value="title_asc" selected>제목순</option>
+        {% else %}
+        <option value="title_asc">제목순</option>
+        {% endif %}
+
+        {% if order_by == 'writer_asc' %}
+        <option value="writer_asc" selected>작성자순</option>
+        {% else %}
+        <option value="writer_asc">작성자순</option>
+        {% endif %}
+
+<!--        {% if order_by == 'my_post' %}-->
+<!--        <option value="my_post" selected>내가 쓴 글</option>-->
+<!--        {% else %}-->
+<!--        <option value="my_post">내가 쓴 글</option>-->
+<!--        {% endif %}-->
+    </select>
+
+    <br>
+    {% if img == 'true' %}
+    <input type="checkbox" class="img_check" checked>
+    {% else %}
+    <input type="checkbox" class="img_check">
+    {% endif %}
+    포토 리뷰만 보기<br>
+
+    <a href="/create">글쓰기</a>
+    <hr>
     <table class="table table-borderless">
         <tr>
             <th>제목</th>
@@ -11,7 +64,7 @@
         </tr>
         {% for post in post_list %}
         <tr>
-            <td><a href='/crud/read?id={{ post.id }}/'>{{ post.title }}</a></td>
+            <td><a href='/read?id={{ post.id }}&order={{ order_by }}&page={{ page }}&img={{ img }}'>{{ post.title }}</a></td>
             <td>{{ post.restaurant_name }}</td>
             <td>{{ post.writer }}</td>
             <td>{{ post.date }}</td>
@@ -19,9 +72,88 @@
         {% endfor %}
     </table>
 
+    <hr>
+    <section id="paging" class="main_box">
+        <div>
+            <ul class="pagination">
+                <!--앞으로 가기 버튼-->
+                {% if data.results.prev_page > 0 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&kw={{ kw }}&img={{ img }}" rel="FirstPage" aria-label="« FirstPage"><<</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ data.results.prev_page }}&kw={{ kw }}&img={{ img }}" rel="prev" aria-label="« Previous"><</a>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&kw={{ kw }}&img={{ img }}" rel="prev" aria-label="« Previous"><</a>
+                </li>
+                {% endif %}
+
+                <!--페이징 목록-->
+                {% for i in data.results.bottom_pages %}
+                    {% if data.results.page >= i|add:-5 and data.results.page <= i|add:4 %}
+                        {% if data.results.page == i %}
+                        <li class="page-item active" aria-current="page">
+                            <a class="page-link active" href="?page={{ i }}&kw={{ kw }}&img={{ img }}">{{i}}</a>  <!--  현재 페이지와 동일하면 버튼 활성화 -->
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}&kw={{ kw }}&img={{ img }}">{{i}}</a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                <!--뒤로 가기 버튼-->
+                {% if data.results.page == data.results.total_page_cnt %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ data.results.page }}&kw={{ kw }}&img={{ img }}" rel="next" aria-label="Next »">></a>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ data.results.next_page }}&kw={{ kw }}&img={{ img }}" rel="next" aria-label="Next »">></a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ data.results.total_page_cnt }}&kw={{ kw }}&img={{ img }}" rel="LastPage" aria-label="LastPage »">>></a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </section>
+
 {% endblock %}
 
 {% block js %}
-    {% load static %}
-    <script src="{% static '/base.js' %}"></script>
+    <script src="{% static '/csrf_token.js' %}"></script>
+    <script>
+        $(document).ready(function(){
+            $(".img_check").change(function(){
+                if($(".img_check").is(":checked")) {
+                    if($(".kw_in_use").val() != undefined) {
+                        url = '/' + $("#select_order option:selected").val() + '?img=true&kw=' + $(".kw_in_use").val()
+                        window.location.href = url
+                    } else {
+                        url = '/' + $("#select_order option:selected").val() + '?img=true'
+                        window.location.href = url
+                    }
+                } else {
+                    if($(".kw_in_use").val() != undefined) {
+                        url = '/' + $("#select_order option:selected").val() + '?img=false&kw=' + $(".kw_in_use").val()
+                        window.location.href = url
+                    } else {
+                        url = '/' + $("#select_order option:selected").val() + '?img=false'
+                        window.location.href = url
+                    }
+                }
+            });
+        });
+
+        function search_kw() {
+            const kw = $(".kw").val()
+            url = '/' + $("#select_order option:selected").val() + '?kw=' + kw
+            window.location.href = url
+        }
+    </script>
 {% endblock %}
+
