@@ -1,75 +1,25 @@
 {% extends 'base.html' %}
-
 {% load static %}
 
-{% block main %}
-<form action="/create/" method="post" id="create_form" name="create_form">
-    {% csrf_token %}
-    writer: <input type="text" name="writer" id="writer">
-    title: <input type="text" name="title" id="title">
-    restaurant_name: <input type="text" name="restaurant_name" id="restaurant_name">
-    content: <textarea name="content" id="content"></textarea>
-    img: <input type="file" name="img" id="img">
-    <button type="button" id="create_btn">작성</button>
-</form>
 
+{% block main %}
+<!--   메인 섹션 (글 작성 페이지)   -->
+<section class="main create_post">
+    <form action="/create/" method="post" id="create_form" name="create_form">
+        {% csrf_token %}
+        writer: <input type="text" name="writer" id="writer">
+        title: <input type="text" name="title" id="title">
+        restaurant_name: <input type="text" name="restaurant_name" id="restaurant_name">
+        content: <textarea name="content" id="content"></textarea>
+        img: <input type="file" name="img" id="img">
+        <button type="button" id="create_btn">작성</button>
+    </form>
+</section>
 {% endblock %}
 
+
+<!--   JS   -->
 {% block js %}
     <script src="{% static 'csrf_token.js' %}"></script>
-    <script>
-        $(document).on('click', '#create_btn', function(e) {
-            console.log('글 작성 버튼 동작!')
-
-            const newPost = new FormData();
-            newPost.append('title', $('#title').val().trim());
-            newPost.append('writer', $('#writer').val().trim());
-            newPost.append('restaurant_name', $('#restaurant_name').val().trim());
-            newPost.append('content', $('#content').val().trim());
-            newPost.append('img', $("#img")[0].files[0]);
-
-            if (newPost.get('title') === '') {
-                alert('제목을 입력해주세요.');
-                return;
-            }
-            if (newPost.get('writer') === '') {
-                alert('작성자명을 입력해주세요.');
-                return;
-            }
-            if (newPost.get('restaurant_name') === '') {
-                alert('식당명을 입력해주세요.');
-                return;
-            }
-            if (newPost.get('content') === '') {
-                alert('글 내용을 입력해주세요.');
-                return;
-            }
-
-            $.ajax({
-                url: '/create/',
-                type: 'post',
-                headers: {
-                   'X-CSRFTOKEN' : '{{ csrf_token }}'
-                },
-                processData: false,
-                contentType: false,
-                data: newPost,
-                async: true,
-                success:function(json){
-                    console.log("data pass success", json)
-                    if (json['result'] == '1') {
-                        alert('글이 작성 되었습니다.')
-                        const url = '/read?id=' + json['id'] + '&order=date_desc&page=1';
-                        window.location.href = url;
-                    }
-                    else {
-                        alert('글 작성에 실패했습니다.')
-                    }
-                },
-                error : function(xhr,errmsg,err) {
-                    console.log(xhr.status + ": " + xhr.responseText);
-                }
-            })
-        });
-    </script>
+    <script src="{% static 'create.js' %}"></script>
 {% endblock %}

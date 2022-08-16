@@ -1,158 +1,224 @@
 {% extends 'base.html' %}
-
 {% load static %}
 
+
 {% block main %}
-{{ kw }}
-    <div class="search">
-        {% if kw == None or kw == 'None' %}
-        <input type="text" class="kw" placeholder="검색어를 입력하세요!">
-        {% else %}
-        <input type="text" class="kw" placeholder="{{ kw }}">
-        <input type="hidden" class="kw_in_use" value="{{ kw }}">
-        {% endif %}
-        <button type="button" onclick="search_kw()">검색</button>
-    </div>
-    <select name="select_order" id="select_order" onchange="location = '/' + this.value + '?kw={{ kw }}'">
-        {% if order_by == 'date_asc' or order_by == 'title_asc' or order_by == 'writer_asc' %}
-        <option value="date_desc">최신순</option>
-        {% else %}
-        <option value="date_desc" selected>최신순</option>
-        {% endif %}
+    <!--   검색 섹션   -->
+    <section class="search">
+        <!--   키워드 검색   -->
+        <div class="search_kw">
+            <details open="true">
+                <summary>검색 하기</summary>
+                <select name="select_topic" id="select_topic" onchange="change_topic()">
+                    <option value="title" {% if topic == 'writer' or topic == 'restaurant_name' %}selected{% endif %}>제목</option>
+                    <option value="writer" {% if topic == 'writer' %}selected{% endif %}>작성자</option>
+                    <option value="restaurant_name" {% if topic == 'restaurant_name' %}selected{% endif %}>식당명</option>
+                </select>
 
-        {% if order_by == 'date_asc'%}
-        <option value="date_asc" selected>오래된순</option>
-        {% else %}
-        <option value="date_asc">오래된순</option>
-        {% endif %}
+                {% if kw == None or kw == 'None' %}
+                <input type="text" class="kw" placeholder="검색어를 입력하세요!">
+                {% else %}
+                <input type="text" class="kw" placeholder="{{ kw }}">
+                {% endif %}
 
-        {% if order_by == 'title_asc' %}
-        <option value="title_asc" selected>제목순</option>
-        {% else %}
-        <option value="title_asc">제목순</option>
-        {% endif %}
+                <button type="button" onclick="search_kw()">검색</button>
+                <p style="font-size:.7rem;">
+                    * 새로운 검색어로 다시 검색하시면 검색 조건들은 초기화되니 원하는 조건으로 다시 설정해주시기 바랍니다! *
+                </p>
+            </details>
+        </div>
+        <!--   검색 조건 설정   -->
+        <div class="search_requirement">
+            <details open="true">
+                <summary>검색 조건 설정</summary>
+                <div class="search search_date">
+                    {% if start_date == None or start_date == 'None' or end_date == None or end_date == 'None' %}
+                    <input type="date" class="start_date"> ~
+                    <input type="date" class="end_date">
+                    {% else %}
+                    <input type="date" class="start_date" value="{{ start_date }}"> ~
+                    <input type="date" class="end_date" value="{{ end_date }}">
+                    {% endif %}
+                    <button type="button" onclick="search_date()">조회</button>
+                    <p style="font-size:.7rem;">
+                        * 날짜 미설정시 모든 날짜가 검색됩니다! * <br>
+                        * 날짜를 변경해서 다시 조회하시면 날짜 외의 검색 조건들은 초기화되니 원하는 조건으로 다시 설정해주시기 바랍니다! *
+                    </p>
+                </div>
 
-        {% if order_by == 'writer_asc' %}
-        <option value="writer_asc" selected>작성자순</option>
-        {% else %}
-        <option value="writer_asc">작성자순</option>
-        {% endif %}
+                <div class="search_order">
+                   <select name="select_order" id="select_order" onchange="location = '/?order=' + this.value + '&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}'">
+                        <option value="date_desc" {% if order == 'date_asc' or order == 'title_asc' or order == 'writer_asc' %}selected{% endif %}>최신순</option>
+                        <option value="date_asc" {% if order == 'date_asc'%}selected{% endif %}>오래된순</option>
+                        <option value="title_asc" {% if order == 'title_asc' %}selected{% endif %}>제목순</option>
+                        <option value="writer_asc" {% if order == 'writer_asc' %}selected{% endif %}>작성자순</option>
+                    </select>
+                </div>
 
-<!--        {% if order_by == 'my_post' %}-->
-<!--        <option value="my_post" selected>내가 쓴 글</option>-->
-<!--        {% else %}-->
-<!--        <option value="my_post">내가 쓴 글</option>-->
-<!--        {% endif %}-->
-    </select>
+                <div class="img_check">
+                    <input type="checkbox" class="img_check" {% if img == 'true' %}checked{% endif %}>
+                    포토 리뷰만 보기
+                </div>
 
-    <br>
-    {% if img == 'true' %}
-    <input type="checkbox" class="img_check" checked>
-    {% else %}
-    <input type="checkbox" class="img_check">
-    {% endif %}
-    포토 리뷰만 보기<br>
+                <div class="my_post_check">
+                    <input type="checkbox" class="my_post_check" {% if my_post == 'true' %}checked{% endif %}>
+                    내가 쓴 리뷰만 보기
+                </div>
+            </details>
+        </div>
+    </section>
 
-    <a href="/create">글쓰기</a>
-    <hr>
-    <table class="table table-borderless">
-        <tr>
-            <th>제목</th>
-            <th>식당명</th>
-            <th>작성자</th>
-            <th>작성일</th>
-        </tr>
-        {% for post in post_list %}
-        <tr>
-            <td><a href='/read?id={{ post.id }}&order={{ order_by }}&page={{ page }}&img={{ img }}'>{{ post.title }}</a></td>
-            <td>{{ post.restaurant_name }}</td>
-            <td>{{ post.writer }}</td>
-            <td>{{ post.date }}</td>
-        </tr>
-        {% endfor %}
-    </table>
 
     <hr>
+
+
+    <!--   메인 섹션 (글 리스트 조회)   -->
+    <section class="main post_list">
+        <table class="table table-borderless">
+            <tr>
+                <th>제목</th>
+                <th>식당명</th>
+                <th>작성자</th>
+                <th>작성일</th>
+            </tr>
+            {% for post in post_list %}
+            <tr>
+                <td>
+                    <a href='/read?id={{ post.id }}&order={{ order }}&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ page }}&img={{ img }}&my_post={{ my_post }}'>{{ post.title }}</a>
+                </td>
+                <td>{{ post.restaurant_name }}</td>
+                <td>{{ post.writer }}</td>
+                <td>{{ post.date }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <hr>
+    </section>
+
+
+    <!--   페이징 섹션   -->
     <section id="paging" class="main_box">
-        <div>
-            <ul class="pagination">
-                <!--앞으로 가기 버튼-->
+        <div class="inner">
+            <ul class="pagination" style="justify-content: center;">
+                <!--    앞으로 가기 버튼   -->
                 {% if data.results.prev_page > 0 %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1&kw={{ kw }}&img={{ img }}" rel="FirstPage" aria-label="« FirstPage"><<</a>
+                    <a class="page-link" href="?order={{ order }}&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&page=1&img={{ img }}&my_post={{ my_post }}" rel="FirstPage" aria-label="« FirstPage"><<</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ data.results.prev_page }}&kw={{ kw }}&img={{ img }}" rel="prev" aria-label="« Previous"><</a>
+                    <a class="page-link" href="?order={{ order }}&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ data.results.prev_page }}&img={{ img }}&my_post={{ my_post }}" rel="prev" aria-label="« Previous"><</a>
                 </li>
                 {% else %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1&kw={{ kw }}&img={{ img }}" rel="prev" aria-label="« Previous"><</a>
+                    <a class="page-link" href="?order={{ order }}&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&page=1&img={{ img }}&my_post={{ my_post }}" rel="prev" aria-label="« Previous"><</a>
                 </li>
                 {% endif %}
 
-                <!--페이징 목록-->
+                <!--   페이징 목록   -->
                 {% for i in data.results.bottom_pages %}
                     {% if data.results.page >= i|add:-5 and data.results.page <= i|add:4 %}
                         {% if data.results.page == i %}
                         <li class="page-item active" aria-current="page">
-                            <a class="page-link active" href="?page={{ i }}&kw={{ kw }}&img={{ img }}">{{i}}</a>  <!--  현재 페이지와 동일하면 버튼 활성화 -->
+                            <a class="page-link active" href="?order={{ order }}&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ i }}&img={{ img }}&my_post={{ my_post }}">{{i}}</a>  <!--  현재 페이지와 동일하면 버튼 활성화 -->
                         </li>
                         {% else %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ i }}&kw={{ kw }}&img={{ img }}">{{i}}</a>
+                            <a class="page-link" href="?order={{ order }}&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ i }}&img={{ img }}&my_post={{ my_post }}">{{i}}</a>
                         </li>
                         {% endif %}
                     {% endif %}
                 {% endfor %}
 
-                <!--뒤로 가기 버튼-->
+                <!--   뒤로 가기 버튼   -->
                 {% if data.results.page == data.results.total_page_cnt %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ data.results.page }}&kw={{ kw }}&img={{ img }}" rel="next" aria-label="Next »">></a>
+                    <a class="page-link" href="?order={{ order }}&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ data.results.page }}&img={{ img }}&my_post={{ my_post }}" rel="next" aria-label="Next »">></a>
                 </li>
                 {% else %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ data.results.next_page }}&kw={{ kw }}&img={{ img }}" rel="next" aria-label="Next »">></a>
+                    <a class="page-link" href="?order={{ order }}&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ data.results.next_page }}&img={{ img }}&my_post={{ my_post }}" rel="next" aria-label="Next »">></a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ data.results.total_page_cnt }}&kw={{ kw }}&img={{ img }}" rel="LastPage" aria-label="LastPage »">>></a>
+                    <a class="page-link" href="?order={{ order }}&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&page={{ data.results.total_page_cnt }}&img={{ img }}&my_post={{ my_post }}" rel="LastPage" aria-label="LastPage »">>></a>
                 </li>
                 {% endif %}
             </ul>
         </div>
     </section>
-
 {% endblock %}
 
+
+<!--   JS    -->
 {% block js %}
     <script src="{% static '/csrf_token.js' %}"></script>
     <script>
+        // 포토리뷰만 보기 체크
         $(document).ready(function(){
             $(".img_check").change(function(){
                 if($(".img_check").is(":checked")) {
-                    if($(".kw_in_use").val() != undefined) {
-                        url = '/' + $("#select_order option:selected").val() + '?img=true&kw=' + $(".kw_in_use").val()
-                        window.location.href = url
-                    } else {
-                        url = '/' + $("#select_order option:selected").val() + '?img=true'
-                        window.location.href = url
-                    }
+                    url = '/?order=' + $("#select_order option:selected").val() + '&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&img=true&my_post={{ my_post }}'
+                    window.location.href = url
                 } else {
-                    if($(".kw_in_use").val() != undefined) {
-                        url = '/' + $("#select_order option:selected").val() + '?img=false&kw=' + $(".kw_in_use").val()
-                        window.location.href = url
-                    } else {
-                        url = '/' + $("#select_order option:selected").val() + '?img=false'
-                        window.location.href = url
-                    }
+                    url = '/?order=' + $("#select_order option:selected").val() + '&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&img=false&my_post={{ my_post }}'
+                    window.location.href = url
                 }
             });
         });
 
+        // 내가 쓴 리뷰만 보기 체크
+        $(document).ready(function(){
+            $(".my_post_check").change(function(){
+                if($(".my_post_check").is(":checked")) {
+                    console.log("내가 쓴 리뷰 체크")
+                    url = '/?order=' + $("#select_order option:selected").val() + '&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&img={{ img }}&my_post=true'
+                    window.location.href = url
+                } else {
+                    console.log("내가쓴리뷰 체크 해제")
+                    url = '/?order=' + $("#select_order option:selected").val() + '&topic={{ topic }}&kw={{ kw }}&start_date={{ start_date }}&end_date={{ end_date }}&img={{ img }}&my_post=false'
+                    window.location.href = url
+                }
+            });
+         });
+
+        // 검색 함수
         function search_kw() {
-            const kw = $(".kw").val()
-            url = '/' + $("#select_order option:selected").val() + '?kw=' + kw
-            window.location.href = url
+            const kw = $(".kw").val().trim()
+            if (kw == '') {
+                alert("검색어를 입력하세요!")
+            } else {
+                const topic = $("#select_topic option:selected").val()
+                url = '/?topic=' + topic +'&kw=' + kw
+                window.location.href = url
+            }
+        }
+
+        // 검색 주제(제목, 작성자, 식당명) 바뀔때 실행되는 함수
+        function change_topic() {
+            $("input.kw").attr("placeholder", "검색어를 입력하세요!")
+        }
+
+        // 날짜 기간 함수
+        function search_date() {
+            // 현재 날짜 구하기
+            const today = new Date()
+            const year = today.getFullYear()
+            const month = ('0' + (today.getMonth() + 1)).slice(-2)
+            const day = ('0' + today.getDate()).slice(-2)
+            const today_date = year + '-' + month  + '-' + day
+            // 입력 날짜 가져오기
+            const start_date = $(".start_date").val()
+            const end_date = $(".end_date").val()
+
+            if (start_date == '' || end_date == '') {
+                alert("시작일과 종료일을 모두 선택하세요!")
+            } else if (start_date > today_date || end_date > today_date) {
+                alert("현재 날짜를 초과하는 날짜는 조회할 수 없습니다!")
+            } else if (start_date > end_date) {
+                alert("시작일이 종료일보다 늦을 수 없습니다!")
+            } else {
+                url = '/?topic={{ topic }}&kw={{ kw }}&start_date=' + start_date +'&end_date=' + end_date
+                window.location.href = url
+            }
         }
     </script>
 {% endblock %}

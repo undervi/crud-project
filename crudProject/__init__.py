@@ -6,7 +6,24 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db import connection
 
 import pymysql
+from django.http import HttpResponse
+
 pymysql.install_as_MySQLdb()
+
+
+def db_select(request, str_sql, params=None):
+    try:
+        cursor = connection.cursor()
+        if params is None:
+            cursor.execute(str_sql)
+        elif params is not None:
+            cursor.execute(str_sql, params)
+        results = dictfetchall(cursor)
+        connection.close()
+        return results
+    except Exception as e:
+        connection.rollback()
+        return HttpResponse(e.message)
 
 
 def dictfetchall(cursor):
@@ -15,15 +32,6 @@ def dictfetchall(cursor):
         dict(zip(columns, row))
         for row in cursor.fetchall()
     ]
-
-
-# def get_last_insert_id():
-#     cursor = connection.cursor()
-#     cursor.execute("SELECT LAST_INSERT_ID()")
-#     last_insert_id = str(cursor.fetchall()[0][0])
-#     connection.commit()
-#     connection.close()
-#     return last_insert_id
 
 
 # 파일 업로드 관련 함수 1
@@ -36,7 +44,7 @@ def file_upload(file, path):
     return db_path
 
 
-# 파일 업로드 관련 함수 1
+# 파일 업로드 관련 함수 2
 def handle_uploaded_file(f, f_name, fext, path):
     date_path = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     new_name = settings.MEDIA_ROOT + path + '/' + f_name + date_path + "." + fext   # 실 저장 위치
@@ -91,6 +99,96 @@ def page_util(lists, page):
         'prev_page': page - 1,
         'next_page': page + 1
     }
+
+
+# 여기서 부터 sql 쿼리문에 쓰는 함수
+def where_check(img, kw, my_post, start_date, end_date):
+    if img == 'true' or (kw is not None and kw != 'None') or my_post == 'true' \
+            or ((start_date is not None and start_date != 'None') and (end_date is not None and end_date != 'None')):
+        where = " WHERE "
+    else:
+        where = ""
+    return where
+
+
+def img_check(img):
+    if img == 'true':
+        img = "img IS NOT NULL"
+    else:
+        img = ""
+    return img
+
+
+def and_check(img, kw):
+    if img == 'true' and (kw is not None and kw != 'None'):
+        many = " AND "
+    else:
+        many = ""
+    return many
+
+
+def topic_check(topic):
+    if topic is None or topic == 'None':
+        topic = ""
+    else:
+        topic = topic
+    return topic
+
+
+def kw_check(kw):
+    if kw is None or kw == 'None':
+        kw = ""
+    else:
+        kw = " LIKE '%" + kw + "%'"
+    return kw
+
+
+def and2_check(img, kw, my_post):
+    if (img == 'true' or (kw is not None and kw != 'None')) and my_post == 'true':
+        many = " AND "
+    else:
+        many = ""
+    return many
+
+
+def my_post_check(my_post, user_id):
+    if my_post == 'true':
+        if user_id is None or user_id == 'None':
+            my_post = "user_id = 'None'"
+        else:
+            my_post = "user_id = " + user_id
+    else:
+        my_post = ""
+    return my_post
+
+
+def and3_check(img, kw, my_post, start_date, end_date):
+    if (img == 'true' or (kw is not None and kw != 'None') or my_post == 'true') \
+            and ((start_date is not None and start_date != 'None') and (end_date is not None and end_date != 'None')):
+        many = " AND "
+    else:
+        many = ""
+    return many
+
+
+def date_check(start_date, end_date):
+    if (start_date is not None and start_date != 'None') and (end_date is not None and end_date != 'None'):
+        date = "date BETWEEN '" + start_date + "' AND '" + end_date + "'"
+    else:
+        date = ""
+    return date
+
+
+def order_check(order):
+    if order == 'date_asc':
+        order = 'date ASC'
+    elif order == 'title_asc':
+        order = 'title ASC'
+    elif order == 'writer_asc':
+        order = 'writer ASC'
+    else:
+        order = 'date DESC'
+    return order
 
 
 

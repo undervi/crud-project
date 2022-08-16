@@ -16,18 +16,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from crudapp.views import create, read, update, delete, date_desc, date_asc, title_asc, writer_asc, img_check
+from crudapp.views import read, delete, home, Create, Update
 
 app_name = "crudapp"
 
 urlpatterns = [
-    path('', date_desc, name='home'),
-    path('date_desc/', date_desc, name='home'),
-    path('date_asc/', date_asc, name='date_asc'),
-    path('title_asc/', title_asc, name='title_asc'),
-    path('writer_asc/', writer_asc, name='writer_asc'),
-    path('create/', create, name='create'),
+    path('', home, name='home'),
+    path('create/', Create.as_view(), name='create'),
     path('read/', read, name='read'),
-    path('update/', update, name='update'),
+    path('update/', Update.as_view(), name='update'),
     path('delete/', delete, name='delete'),
 ]

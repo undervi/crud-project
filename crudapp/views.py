@@ -2,261 +2,140 @@ import json
 
 from django.core.paginator import Paginator
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.views import View
 
-from crudProject import dictfetchall, file_upload, page_util
-
-
-def where_check(img, kw):
-    if img == 'true' or kw is not None and kw != 'None':
-        where = " WHERE "
-    else:
-        where = ""
-    return where
+from crudProject import dictfetchall, file_upload, page_util, where_check, and_check, img_check, kw_check, \
+    topic_check, and2_check, my_post_check, date_check, and3_check, order_check, db_select
 
 
-def and_check(img, kw):
-    if img == 'true' and kw is not None and kw != 'None':
-        many = " AND "
-    else:
-        many = ""
-    return many
-
-
-def img_check(img):
-    if img == 'true':
-        img = "img IS NOT NULL"
-    else:
-        img = ""
-    return img
-
-
-def kw_check(kw):
-    if kw is None or kw == 'None':
-        kw = ""
-    else:
-        kw = "title LIKE '%" + kw + "%'"
-    return kw
-
-
-def date_desc(request):
-    img = request.GET.get('img')
+# HOME (POST LIST)
+def home(request):
+    order = request.GET.get('order')
+    topic = request.GET.get('topic')
     kw = request.GET.get('kw')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    img = request.GET.get('img')
+    my_post = request.GET.get('my_post')
+    user_id = str(request.session.get('user_id'))
+    page = request.GET.get('page')
 
     try:
-        cursor = connection.cursor()
-        str_sql = "SELECT title, writer, date, restaurant_name, id FROM board" \
-                  + where_check(img, kw) + img_check(img) + and_check(img, kw) + kw_check(kw) + " ORDER BY date DESC"
+        str_sql = "SELECT title, writer, date, restaurant_name, id FROM board" + \
+                  where_check(img, kw, my_post, start_date, end_date) + img_check(img) + \
+                  and_check(img, kw) + topic_check(topic) + kw_check(kw) + \
+                  and2_check(img, kw, my_post) + my_post_check(my_post, user_id) + \
+                  and3_check(img, kw, my_post, start_date, end_date) + date_check(start_date, end_date) + \
+                  " ORDER BY " + order_check(order)
         print("sql문: " + str_sql)
-        cursor.execute(str_sql)
-        post_list = dictfetchall(cursor)
-        connection.commit()
-        connection.close()
 
-        page = request.GET.get('page')
+        post_list = db_select(request, str_sql)
         lists = page_util(post_list, page)
-
         post_list = Paginator(post_list, 10).get_page(page)
 
     except:
-        connection.rollback()
         print("Failed postList")
-
-    data = {
-        'results': lists,
-    }
-    context = {
-        'post_list': post_list,
-        'data': data,
-        'order_by': 'date_desc',
-        'page': page,
-        'img': img,
-        'kw': kw
-    }
-
-    return render(request, 'crudapp/home.html', context=context)
-
-
-def date_asc(request):
-    img = request.GET.get('img')
-    kw = request.GET.get('kw')
-    try:
-        cursor = connection.cursor()
-        str_sql = "SELECT title, writer, date, restaurant_name, id FROM board" \
-                  + where_check(img, kw) + img_check(img) + and_check(img, kw) + kw_check(kw) + " ORDER BY date ASC"
         print("sql문: " + str_sql)
-        cursor.execute(str_sql)
-        post_list = dictfetchall(cursor)
-
-        connection.commit()
-        connection.close()
-
-        page = request.GET.get('page')
-        lists = page_util(post_list, page)
-
-        post_list = Paginator(post_list, 10).get_page(page)
-
-    except:
-        connection.rollback()
-
+        print(post_list)
     data = {
         'results': lists,
     }
     context = {
         'post_list': post_list,
         'data': data,
-        'order_by': 'date_asc',
+        'order': order,
+        'topic': topic,
+        'kw': kw,
+        'start_date': start_date,
+        'end_date': end_date,
         'page': page,
         'img': img,
-        'kw': kw
+        'my_post': my_post
     }
 
     return render(request, 'crudapp/home.html', context=context)
 
 
-def title_asc(request):
-    img = request.GET.get('img')
-    kw = request.GET.get('kw')
-    try:
-        cursor = connection.cursor()
-        str_sql = "SELECT title, writer, date, restaurant_name, id FROM board" \
-                  + where_check(img, kw) + img_check(img) + and_check(img, kw) + kw_check(kw) + " ORDER BY title ASC"
-        print("sql문: " + str_sql)
-        cursor.execute(str_sql)
-        post_list = dictfetchall(cursor)
-
-        connection.commit()
-        connection.close()
-
-        page = request.GET.get('page')
-        lists = page_util(post_list, page)
-
-        post_list = Paginator(post_list, 10).get_page(page)
-
-    except:
-        connection.rollback()
-        print("Failed postList")
-        print(str_sql)
-
-    data = {
-        'results': lists,
-    }
-    context = {
-        'post_list': post_list,
-        'data': data,
-        'order_by': 'title_asc',
-        'page': page,
-        'img': img,
-        'kw': kw
-    }
-
-    return render(request, 'crudapp/home.html', context=context)
-
-
-def writer_asc(request):
-    img = request.GET.get('img')
-    kw = request.GET.get('kw')
-    try:
-        cursor = connection.cursor()
-        str_sql = "SELECT title, writer, date, restaurant_name, id FROM board" \
-                  + where_check(img, kw) + img_check(img) + and_check(img, kw) + kw_check(kw) + " ORDER BY writer ASC"
-        print("sql문: " + str_sql)
-        cursor.execute(str_sql)
-        post_list = dictfetchall(cursor)
-
-        connection.commit()
-        connection.close()
-
-        page = request.GET.get('page')
-        lists = page_util(post_list, page)
-
-        post_list = Paginator(post_list, 10).get_page(page)
-
-    except:
-        connection.rollback()
-        print("Failed postList")
-
-    data = {
-        'results': lists,
-    }
-    context = {
-        'post_list': post_list,
-        'data': data,
-        'order_by': 'writer_asc',
-        'page': page,
-        'img': img,
-        'kw': kw
-    }
-
-    return render(request, 'crudapp/home.html', context=context)
-
-
+# READ (POST DETAILS)
 def read(request):
     try:
         id_str = request.GET['id']
-        order_by = request.GET.get('order')
+        order = request.GET.get('order')
+        topic = request.GET.get('topic')
+        kw = request.GET.get('kw')
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
         page = request.GET.get('page')
         img = request.GET.get('img')
+        my_post = request.GET.get('my_post')
 
-        cursor = connection.cursor()
-        str_sql = "SELECT * FROM board WHERE id = %s"
-        cursor.execute(str_sql, (id_str,))
-        datas = cursor.fetchall()
+        str_sql = "SELECT id, writer, date, title, content, img, restaurant_name FROM board WHERE id = %s"
+        datas = db_select(request, str_sql, (id_str,))
 
-        connection.commit()
-        connection.close()
-
-        post = {'id': datas[0][0],
-                'writer': datas[0][1],
-                'date': datas[0][2],
-                'title': datas[0][3],
-                'content': datas[0][4],
-                'img': datas[0][5],
-                'restaurant_name': datas[0][6]
+        post = {'id': datas[0]['id'],
+                'writer': datas[0]['writer'],
+                'date': datas[0]['date'],
+                'title': datas[0]['title'],
+                'content': datas[0]['content'],
+                'img': datas[0]['img'],
+                'restaurant_name': datas[0]['restaurant_name']
                 }
+        context = {
+            'post': post,
+            'order': order,
+            'topic': topic,
+            'kw': kw,
+            'start_date': start_date,
+            'end_date': end_date,
+            'page': page,
+            'img': img,
+            'my_post': my_post
+        }
 
     except:
         connection.rollback()
         print("Failed read")
 
-    return render(request, 'crudapp/read.html', context={'post': post, 'order_by': order_by, 'page': page, 'img': img})
+    return render(request, 'crudapp/read.html', context=context)
 
 
+# DELETE
 def delete(request):
-    if request.method == 'POST':
-        post_id = request.POST.get('id')
-        user_id = str(request.session.get('user_id'))
+    post_id = request.POST.get('id')
+    user_id = str(request.session.get('user_id'))
 
-        try:
-            cursor = connection.cursor()
-            str_sql = "SELECT user_id FROM board WHERE id = %s"
-            cursor.execute(str_sql, (post_id,))
-            datas = cursor.fetchall()
-            match_user = str(datas[0][0])
-            str_sql = "DELETE FROM board WHERE id = %s AND user_id = %s"
-            result = cursor.execute(str_sql, (post_id, user_id))
-            result_str = str(result)
-            connection.commit()
-            connection.close()
-        except:
-            connection.rollback()
-            print("Failed delete")
+    try:
+        cursor = connection.cursor()
+        str_sql = "SELECT user_id FROM board WHERE id = %s"
+        cursor.execute(str_sql, (post_id,))
+        datas = cursor.fetchall()
+        match_user = str(datas[0][0])
+        str_sql = "DELETE FROM board WHERE id = %s AND user_id = %s"
+        result = cursor.execute(str_sql, (post_id, user_id))
+        result_str = str(result)
+        connection.commit()
+        connection.close()
+    except:
+        connection.rollback()
+        print("Failed delete")
 
-        context = {
-            'result': result_str,
-            'user_id': user_id,
-            'match_user': match_user
-        }
+    context = {
+        'result': result_str,
+        'user_id': user_id,
+        'match_user': match_user
+    }
 
-        return HttpResponse(json.dumps(context), content_type="application/json")
+    return HttpResponse(json.dumps(context), content_type="application/json")
 
 
-def create(request):
-    if request.method == 'GET':
+# CREATE
+class Create(View):
+    def get(self, request):
         return render(request, 'crudapp/create.html')
 
-    elif request.method == 'POST':
+    def post(self, request):
         writer = request.POST.get('writer')
         title = request.POST.get('title')
         restaurant_name = request.POST.get('restaurant_name')
@@ -299,7 +178,6 @@ def create(request):
             except:
                 connection.rollback()
                 print("Failed create (user_id is Not None)")
-                print(last_insert_id)
 
         context = {
             'id': last_insert_id,
@@ -309,41 +187,55 @@ def create(request):
         return HttpResponse(json.dumps(context), content_type="application/json")
 
 
-def update(request):
-    if request.method == 'GET':
+# UPDATE
+class Update(View):
+    def get(self, request):
         id_str = request.GET['id']
-        order_by = request.GET.get('order')
+        order = request.GET.get('order')
+        topic = request.GET.get('topic')
+        kw = request.GET.get('kw')
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
         page = request.GET.get('page')
         img = request.GET.get('img')
+        my_post = request.GET.get('my_post')
 
         try:
             cursor = connection.cursor()
 
-            str_sql = "SELECT * FROM board WHERE id = %s"
-            result = cursor.execute(str_sql, (id_str,))
-            datas = cursor.fetchall()
+            str_sql = "SELECT id, writer, date, title, content, img, restaurant_name FROM board WHERE id = %s"
+            datas = db_select(request, str_sql, (id_str,))
 
             connection.commit()
             connection.close()
 
-            post = {'id': datas[0][0],
-                    'writer': datas[0][1],
-                    'date': datas[0][2],
-                    'title': datas[0][3],
-                    'content': datas[0][4],
-                    'img': datas[0][5],
-                    'restaurant_name': datas[0][6]
+            post = {'id': datas[0]['id'],
+                    'writer': datas[0]['writer'],
+                    'date': datas[0]['date'],
+                    'title': datas[0]['title'],
+                    'content': datas[0]['content'],
+                    'img': datas[0]['img'],
+                    'restaurant_name': datas[0]['restaurant_name']
                     }
+            context = {
+                'post': post,
+                'order': order,
+                'topic': topic,
+                'kw': kw,
+                'start_date': start_date,
+                'end_date': end_date,
+                'page': page,
+                'img': img,
+                'my_post': my_post
+            }
 
         except:
             connection.rollback()
             print("Failed upload update page")
 
-        context = {'post': post, 'order_by': order_by, 'page': page, 'img': img}
         return render(request, 'crudapp/update.html', context=context)
 
-    elif request.method == "POST":
-
+    def post(self, request):
         post_id = request.POST.get('id')
         title = request.POST.get('title')
         content = request.POST.get('content')
